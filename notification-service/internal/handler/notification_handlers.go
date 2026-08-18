@@ -23,8 +23,8 @@ func CreateNotificationHandler(pool *pgxpool.Pool) gin.HandlerFunc {
 			return
 		}
 		req.Normalize()
-		if !validation.ValidateNotificationRequest(req) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid notification request"})
+		if err := validation.ValidateNotificationRequest(req); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		notification := service.CreateNotification(req, parsedCustomerID)
