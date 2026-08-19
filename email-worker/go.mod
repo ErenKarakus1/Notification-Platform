@@ -2,7 +2,10 @@ module github.com/ErenKarakus1/Notification-Platform/email-worker
 
 go 1.26.5
 
-require github.com/segmentio/kafka-go v0.4.51
+require (
+	github.com/joho/godotenv v1.5.1
+	github.com/segmentio/kafka-go v0.4.51
+)
 
 require (
 	github.com/klauspost/compress v1.15.9 // indirect

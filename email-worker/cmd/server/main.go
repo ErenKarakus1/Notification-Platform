@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/ErenKarakus1/Notification-Platform/email-worker/internal/config"
 	"github.com/ErenKarakus1/Notification-Platform/email-worker/internal/kafka"
 	"github.com/ErenKarakus1/Notification-Platform/email-worker/internal/model"
+	"github.com/ErenKarakus1/Notification-Platform/email-worker/internal/service"
 )
 
 func main() {
+	cfg := config.LoadConfig()
+
 	consumer := kafka.NewConsumer([]string{"localhost:9092"})
 	defer consumer.Close()
 	log.Println("email worker started")
@@ -27,5 +31,13 @@ func main() {
 			continue
 		}
 		log.Printf("notification recieved: %+v", event)
+
+		if err := service.SendEmail(cfg, event); err != nil {
+			log.Print(err)
+			continue
+		} else {
+			log.Println("email sent")
+		}
+
 	}
 }
