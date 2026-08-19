@@ -9,7 +9,6 @@ import (
 
 type Config struct {
 	DatabaseURL string
-	RabbitmqURL string
 }
 
 func LoadConfig() Config {
