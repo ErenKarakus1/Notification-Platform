@@ -31,9 +31,14 @@ func main() {
 	defer producer.Close()
 	log.Println("kafka producer initialized")
 
-	consumer := kafka.NewConsumer([]string{"localhost:9092"})
-	defer consumer.Close()
-	go runNotificationConsumer(consumer, pool)
+	sentConsumer := kafka.NewConsumer([]string{"localhost:9092"}, "notification.sent", "notification-sent")
+	defer sentConsumer.Close()
+
+	failedConsumer := kafka.NewConsumer([]string{"localhost:9092"}, "notification.failed", "notification-failed")
+	defer failedConsumer.Close()
+
+	go runNotificationConsumer(sentConsumer, pool, model.StatusSent)
+	go runNotificationConsumer(failedConsumer, pool, model.StatusFailed)
 	log.Println("kafka consumer initialized")
 
 	router := gin.Default()
@@ -45,14 +50,14 @@ func main() {
 	}
 }
 
-func runNotificationConsumer(consumer *kafka.Consumer, pool *pgxpool.Pool) {
+func runNotificationConsumer(consumer *kafka.Consumer, pool *pgxpool.Pool, status string) {
 	for {
 		msg, err := consumer.ReadMessage(context.Background())
 		if err != nil {
 			log.Println("failed to read message: ", err)
 			continue
 		}
-		var event model.NotificationSentEvent
+		var event model.NotificationStatusEvent
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.Println("failed to unmarshal: ", err)
 			continue
@@ -62,7 +67,7 @@ func runNotificationConsumer(consumer *kafka.Consumer, pool *pgxpool.Pool) {
 			log.Println("couldnt parse notification id:", err)
 			continue
 		}
-		err = repository.UpdateNotificationStatus(context.Background(), pool, notificationID, model.StatusSent)
+		err = repository.UpdateNotificationStatus(context.Background(), pool, notificationID, status)
 		if err != nil {
 			if errors.Is(err, repository.ErrNotificationNotFound) {
 				log.Println("notification not found: ", notificationID)
@@ -71,6 +76,6 @@ func runNotificationConsumer(consumer *kafka.Consumer, pool *pgxpool.Pool) {
 			log.Println("couldnt update notification status: ", err)
 			continue
 		}
-		log.Printf("marked notification as sent: %s", event.NotificationID)
+		log.Printf("marked notification as %s: %s", status, event.NotificationID)
 	}
 }

@@ -12,3 +12,7 @@ type NotificationCreatedEvent struct {
 type NotificationSentEvent struct {
 	NotificationID string `json:"notification_id"`
 }
+
+type NotificationFailedEvent struct {
+	NotificationID string `json:"notification_id"`
+}

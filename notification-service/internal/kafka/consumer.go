@@ -10,12 +10,12 @@ type Consumer struct {
 	reader *kafka.Reader
 }
 
-func NewConsumer(brokers []string) *Consumer {
+func NewConsumer(brokers []string, topic string, groupID string) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers: brokers,
-			Topic:   "notification.sent",
-			GroupID: "email-workers",
+			Topic:   topic,
+			GroupID: groupID,
 		}),
 	}
 }

@@ -17,8 +17,11 @@ func main() {
 	consumer := kafka.NewConsumer([]string{"localhost:9092"})
 	defer consumer.Close()
 
-	producer := kafka.NewProducer([]string{"localhost:9092"})
-	defer producer.Close()
+	sentProducer := kafka.NewProducer([]string{"localhost:9092"}, "notification.sent")
+	defer sentProducer.Close()
+
+	failedProducer := kafka.NewProducer([]string{"localhost:9092"}, "notification.failed")
+	defer failedProducer.Close()
 
 	log.Println("email worker started")
 
@@ -38,11 +41,16 @@ func main() {
 
 		if err := service.SendEmail(cfg, event); err != nil {
 			log.Print("failed to send email")
-			continue
+			failedEvent := model.NotificationFailedEvent{NotificationID: event.NotificationID}
+			if err := failedProducer.PublishNotificationFailed(context.Background(), failedEvent); err != nil {
+				log.Println("failed to publish notification.failed")
+				continue
+			}
+			log.Println("notification.failed published")
 		} else {
 			log.Println("email sent")
 			sentEvent := model.NotificationSentEvent{NotificationID: event.NotificationID}
-			if err := producer.PublishNotificationSent(context.Background(), sentEvent); err != nil {
+			if err := sentProducer.PublishNotificationSent(context.Background(), sentEvent); err != nil {
 				log.Println("failed to publish notification.sent")
 				continue
 			}

@@ -13,17 +13,29 @@ type Producer struct {
 	writer *kafka.Writer
 }
 
-func NewProducer(brokers []string) *Producer {
+func NewProducer(brokers []string, topic string) *Producer {
 	return &Producer{
 		writer: &kafka.Writer{
 			Addr:     kafka.TCP(brokers...),
-			Topic:    "notification.sent",
+			Topic:    topic,
 			Balancer: &kafka.LeastBytes{},
 		},
 	}
 }
 
 func (p *Producer) PublishNotificationSent(ctx context.Context, event model.NotificationSentEvent) error {
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return errors.New("invalid payload")
+	}
+
+	return p.writer.WriteMessages(ctx, kafka.Message{
+		Key:   []byte(event.NotificationID),
+		Value: payload,
+	})
+}
+
+func (p *Producer) PublishNotificationFailed(ctx context.Context, event model.NotificationFailedEvent) error {
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return errors.New("invalid payload")
