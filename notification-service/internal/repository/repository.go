@@ -40,6 +40,12 @@ const getNotificationByIDQuery = `
 	AND customer_id=$2
 `
 
+const updateNotificationStatusQuery = `
+	UPDATE notifications
+	SET status=$1
+	WHERE id=$2
+`
+
 func CreateNotification(ctx context.Context, pool *pgxpool.Pool, notification model.Notification) error {
 	_, err := pool.Exec(
 		ctx,
@@ -82,4 +88,21 @@ func GetNotificationByID(ctx context.Context, pool *pgxpool.Pool, notificationID
 		return model.Notification{}, errors.New("internal server error")
 	}
 	return notification, nil
+}
+
+func UpdateNotificationStatus(ctx context.Context, pool *pgxpool.Pool, notificationID uuid.UUID, status string) error {
+	result, err := pool.Exec(
+		ctx,
+		updateNotificationStatusQuery,
+		status,
+		notificationID,
+	)
+	if err != nil {
+		return errors.New("internal server error")
+	}
+
+	if result.RowsAffected() == 0 {
+		return ErrNotificationNotFound
+	}
+	return nil
 }

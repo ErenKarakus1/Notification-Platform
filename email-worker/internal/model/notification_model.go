@@ -8,3 +8,7 @@ type NotificationCreatedEvent struct {
 	Subject        string `json:"subject"`
 	Body           string `json:"body"`
 }
+
+type NotificationSentEvent struct {
+	NotificationID string `json:"notification_id"`
+}
