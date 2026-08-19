@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/ErenKarakus1/Notification-Platform/notification-service/internal/kafka"
 	"github.com/ErenKarakus1/Notification-Platform/notification-service/internal/model"
 	"github.com/ErenKarakus1/Notification-Platform/notification-service/internal/repository"
 	"github.com/ErenKarakus1/Notification-Platform/notification-service/internal/service"
@@ -13,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func CreateNotificationHandler(pool *pgxpool.Pool) gin.HandlerFunc {
+func CreateNotificationHandler(pool *pgxpool.Pool, producer *kafka.Producer) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		customerIDStr, _ := ctx.Get("customer_id")
 		parsedCustomerID := customerIDStr.(uuid.UUID)
@@ -29,6 +30,19 @@ func CreateNotificationHandler(pool *pgxpool.Pool) gin.HandlerFunc {
 		}
 		notification := service.CreateNotification(req, parsedCustomerID)
 		if err := repository.CreateNotification(ctx.Request.Context(), pool, notification); err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+		event := model.NotificationCreatedEvent{
+			NotificationID: notification.ID,
+			CustomerID:     notification.CustomerID,
+			Recipient:      notification.Recipient,
+			Channel:        notification.Channel,
+			Subject:        notification.Subject,
+			Body:           notification.Body,
+		}
+		err := producer.PublishNotificationCreated(ctx.Request.Context(), event)
+		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 			return
 		}

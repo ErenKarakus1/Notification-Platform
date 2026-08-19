@@ -42,3 +42,12 @@ type CreateNotificationResponse struct {
 	ID     uuid.UUID
 	Status string
 }
+
+type NotificationCreatedEvent struct {
+	NotificationID uuid.UUID `json:"notification_id"`
+	CustomerID     uuid.UUID `json:"customer_id"`
+	Recipient      string    `json:"recipient"`
+	Channel        string    `json:"channel"`
+	Subject        string    `json:"subject"`
+	Body           string    `json:"body"`
+}
