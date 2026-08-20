@@ -20,10 +20,10 @@ func main() {
 
 	router := gin.Default()
 
-	router.POST("/register", handler.RegisterHandler(pool))
-	router.POST("/login", handler.LoginHandler(pool, cfg.JWTSecret))
+	router.POST("/auth/register", handler.RegisterHandler(pool))
+	router.POST("/auth/login", handler.LoginHandler(pool, cfg.JWTSecret))
 
-	if err := router.Run(":8081"); err != nil {
+	if err := router.Run(":8083"); err != nil {
 		log.Fatal(err)
 	}
 }

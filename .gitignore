@@ -37,3 +37,6 @@ temp/
 # Go workspace
 go.work
 go.work.sum
+
+# Local tests
+api_test.go
