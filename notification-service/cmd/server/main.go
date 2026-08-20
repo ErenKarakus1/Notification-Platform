@@ -45,7 +45,7 @@ func main() {
 	router.POST("/notifications", middleware.CustomerAuthMiddleware(), handler.CreateNotificationHandler(pool, producer))
 	router.GET("/notifications/:id", middleware.CustomerAuthMiddleware(), handler.GetNotificationByIDHandler(pool))
 
-	if err := router.Run(":8080"); err != nil {
+	if err := router.Run(":8082"); err != nil {
 		log.Fatal("couldnt run router")
 	}
 }
