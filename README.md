@@ -1108,6 +1108,8 @@ The Notification Service is not intended to be accessed directly by external cli
 
 Possible extensions include:
 
+* SMS notifications
+* Push notifications
 * Delayed Kafka retry topics
 * Dead-letter queue
 * Exponential backoff for retries
