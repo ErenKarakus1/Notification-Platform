@@ -833,6 +833,64 @@ docker exec redis redis-cli ping
 
 ---
 
+## PostgreSQL
+
+Create the two databases used by the platform.
+
+### Linux / macOS
+
+```bash
+psql -U postgres -c "CREATE DATABASE auth_db;"
+psql -U postgres -c "CREATE DATABASE notification_db;"
+```
+
+### Windows PowerShell
+
+```powershell
+psql -U postgres -c "CREATE DATABASE auth_db;"
+psql -U postgres -c "CREATE DATABASE notification_db;"
+```
+
+## Migrations
+
+Each service owns its own database schema. Apply the SQL migrations before starting the services.
+
+### Auth Service
+
+#### Linux / macOS
+
+```bash
+psql "postgres://postgres:password@localhost:5432/auth_db" -f auth-service/migrations/001_init.sql
+```
+
+#### Windows PowerShell
+
+```powershell
+psql "postgres://postgres:password@localhost:5432/auth_db" -f auth-service/migrations/001_init.sql
+```
+
+Creates the `users` table.
+
+### Notification Service
+
+#### Linux / macOS
+
+```bash
+psql "postgres://postgres:password@localhost:5432/notification_db" -f notification-service/migrations/001_init.sql
+```
+
+#### Windows PowerShell
+
+```powershell
+psql "postgres://postgres:password@localhost:5432/notification_db" -f notification-service/migrations/001_init.sql
+```
+
+Creates the `notifications` table.
+
+> Migrations must be applied before starting `auth-service` or `notification-service` — both open a connection successfully either way, but the first request that touches the database will fail if the required table doesn't exist.
+
+---
+
 ## Environment Variables
 
 Each service has its own environment configuration. Copy the corresponding `.env.example` file to `.env` and replace the placeholder values.
