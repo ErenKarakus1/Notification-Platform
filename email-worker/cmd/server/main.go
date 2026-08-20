@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/ErenKarakus1/Notification-Platform/email-worker/internal/config"
 	"github.com/ErenKarakus1/Notification-Platform/email-worker/internal/kafka"
@@ -38,16 +39,18 @@ func main() {
 			continue
 		}
 		log.Printf("notification recieved: %+v", event)
-
-		if err := service.SendEmail(cfg, event); err != nil {
-			log.Print("failed to send email")
-			failedEvent := model.NotificationFailedEvent{NotificationID: event.NotificationID}
-			if err := failedProducer.PublishNotificationFailed(context.Background(), failedEvent); err != nil {
-				log.Println("failed to publish notification.failed")
-				continue
+		const maxTries = 3
+		var sendErr error
+		for attempt := 1; attempt <= maxTries; attempt++ {
+			sendErr = service.SendEmail(cfg, event)
+			if sendErr != nil {
+				log.Printf("failed to send email (attempt: %v/%v): %v", attempt, maxTries, sendErr)
+				time.Sleep(time.Duration(attempt) * time.Second)
+			} else {
+				break
 			}
-			log.Println("notification.failed published")
-		} else {
+		}
+		if sendErr == nil {
 			log.Println("email sent")
 			sentEvent := model.NotificationSentEvent{NotificationID: event.NotificationID}
 			if err := sentProducer.PublishNotificationSent(context.Background(), sentEvent); err != nil {
@@ -55,6 +58,13 @@ func main() {
 				continue
 			}
 			log.Println("notification.sent published")
+		} else {
+			failedEvent := model.NotificationFailedEvent{NotificationID: event.NotificationID}
+			if err := failedProducer.PublishNotificationFailed(context.Background(), failedEvent); err != nil {
+				log.Println("failed to publish notification.failed")
+				continue
+			}
+			log.Println("notification.failed published")
 		}
 
 	}
