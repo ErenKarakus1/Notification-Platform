@@ -96,7 +96,7 @@ It is responsible for:
 * Redis-based rate limiting
 * Reverse proxying requests
 
-Clients do not directly communicate with the internal services.
+Clients should not directly communicate with the internal services. Services must be isolated in production environment.
 
 ```text
 Client
