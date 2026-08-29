@@ -189,7 +189,7 @@ The Notification Service manages notification records and notification delivery 
 * Consume delivery result events
 * Update notification status
 
-The Notification Service owns **its own PostgreSQL database**.
+The Notification Service owns **its own PostgreSQL database**. Migration for PostgreSQL is provided.
 
 It does not directly access the Auth Service's database.
 
