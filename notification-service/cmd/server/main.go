@@ -52,7 +52,7 @@ func main() {
 
 func runNotificationConsumer(consumer *kafka.Consumer, pool *pgxpool.Pool, status string) {
 	for {
-		msg, err := consumer.ReadMessage(context.Background())
+		msg, err := consumer.FetchMessage(context.Background())
 		if err != nil {
 			log.Println("failed to read message: ", err)
 			continue
@@ -60,11 +60,17 @@ func runNotificationConsumer(consumer *kafka.Consumer, pool *pgxpool.Pool, statu
 		var event model.NotificationStatusEvent
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.Println("failed to unmarshal: ", err)
+			if err := consumer.CommitMessages(context.Background(), msg); err != nil {
+				log.Println("failed to commit invalid message: ", err)
+			}
 			continue
 		}
 		notificationID, err := uuid.Parse(event.NotificationID)
 		if err != nil {
 			log.Println("couldnt parse notification id:", err)
+			if err := consumer.CommitMessages(context.Background(), msg); err != nil {
+				log.Println("failed to commit invalid message: ", err)
+			}
 			continue
 		}
 		err = repository.UpdateNotificationStatus(context.Background(), pool, notificationID, status)
@@ -77,5 +83,8 @@ func runNotificationConsumer(consumer *kafka.Consumer, pool *pgxpool.Pool, statu
 			continue
 		}
 		log.Printf("marked notification as %s: %s", status, event.NotificationID)
+		if err := consumer.CommitMessages(context.Background(), msg); err != nil {
+			log.Println("failed to commit message: ", err)
+		}
 	}
 }

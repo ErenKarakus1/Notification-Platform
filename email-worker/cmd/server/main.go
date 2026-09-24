@@ -27,7 +27,7 @@ func main() {
 	log.Println("email worker started")
 
 	for {
-		msg, err := consumer.ReadMessage(context.Background())
+		msg, err := consumer.FetchMessage(context.Background())
 		if err != nil {
 			log.Println(err)
 			continue
@@ -36,6 +36,9 @@ func main() {
 		var event model.NotificationCreatedEvent
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.Println(err)
+			if err := consumer.CommitMessages(context.Background(), msg); err != nil {
+				log.Println("failed to commit invalid message:", err)
+			}
 			continue
 		}
 		log.Printf("notification recieved: %+v", event)
@@ -54,18 +57,21 @@ func main() {
 			log.Println("email sent")
 			sentEvent := model.NotificationSentEvent{NotificationID: event.NotificationID}
 			if err := sentProducer.PublishNotificationSent(context.Background(), sentEvent); err != nil {
-				log.Println("failed to publish notification.sent")
+				log.Println("failed to publish notification.sent:", err)
 				continue
 			}
 			log.Println("notification.sent published")
 		} else {
 			failedEvent := model.NotificationFailedEvent{NotificationID: event.NotificationID}
 			if err := failedProducer.PublishNotificationFailed(context.Background(), failedEvent); err != nil {
-				log.Println("failed to publish notification.failed")
+				log.Println("failed to publish notification.failed:", err)
 				continue
 			}
 			log.Println("notification.failed published")
 		}
 
+		if err := consumer.CommitMessages(context.Background(), msg); err != nil {
+			log.Println("failed to commit message:", err)
+		}
 	}
 }
